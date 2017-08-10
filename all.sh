@@ -19,7 +19,7 @@ function run {
 }
 
 function run_all {
-  source tasks
+  source $CURRENT_DIR/tasks
 }
 
 run_all
