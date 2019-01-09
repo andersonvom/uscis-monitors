@@ -23,7 +23,8 @@ if match is not None:
 
 match = re.search('<h1>(.*?)</h1>', single_line_page)
 new_status = match.group(1)
-match = re.search('On (\w+ \d+, \d+),', single_line_page)
+months = '(January|February|March|April|May|June|July|August|September|October|November|December)'
+match = re.search('(%s \d+, \d+),' % months, single_line_page)
 new_action_date = match.group(1)
 
 if new_status != current_status or new_action_date != current_action_date:
