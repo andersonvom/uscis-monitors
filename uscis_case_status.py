@@ -4,28 +4,41 @@ import sys
 import urllib.request
 
 
-app_receipt_num=sys.argv[1]
-current_status=sys.argv[2]
-current_action_date=sys.argv[3]
+def get_page_as_single_line(url, post_data):
+    with urllib.request.urlopen(url, data=bytes(post_data, 'utf-8')) as res:
+        page = str(res.read())
 
-url = 'https://egov.uscis.gov/casestatus/mycasestatus.do'
-data = 'appReceiptNum=%s' % app_receipt_num
+    return page.replace('\\r\\n', ' ').replace('\\t', ' ')
 
-with urllib.request.urlopen(url, data=bytes(data, 'utf-8')) as res:
-    page = str(res.read())
 
-single_line_page = page.replace('\\r\\n', ' ').replace('\\t', ' ')
+def exit_on_error(page):
+    match = re.search('has been locked out', page)
+    if match is not None:
+        print('[ERROR] Too many requests')
+        sys.exit(1)
 
-match = re.search('has been locked out', single_line_page)
-if match is not None:
-    print('[ERROR] Too many requests')
-    sys.exit(1)
 
-match = re.search('<h1>(.*?)</h1>', single_line_page)
-new_status = match.group(1)
-months = '(January|February|March|April|May|June|July|August|September|October|November|December)'
-match = re.search('(%s \d+, \d+),' % months, single_line_page)
-new_action_date = match.group(1)
+def get_status(page):
+    return re.search('<h1>(.*?)</h1>', page).group(1)
 
-if new_status != current_status or new_action_date != current_action_date:
-    print('%s: %s - %s' % (app_receipt_num, new_status, new_action_date), end='')
+
+def get_date(page):
+    months = '(January|February|March|April|May|June|July|August|September|October|November|December)'
+    return re.search('(%s \d+, \d+),' % months, page).group(1)
+
+
+def get_case_status(receipt_number):
+    url = 'https://egov.uscis.gov/casestatus/mycasestatus.do'
+    post_data = 'appReceiptNum=%s' % receipt_number
+    page = get_page_as_single_line(url, post_data)
+    exit_on_error(page)
+    return get_status(page), get_date(page)
+
+
+if __name__ == '__main__':
+    receipt_number = sys.argv[1]
+    last_case_status = (sys.argv[2], sys.argv[3])
+    current_case_status = get_case_status(receipt_number)
+    if last_case_status != current_case_status:
+        info = (receipt_number,) + current_case_status
+        print('%s: %s - %s' % info, end='')
