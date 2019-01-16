@@ -3,26 +3,15 @@
 python="$HOME/.pyenv/shims/python"
 CURRENT_DIR=$(cd $(dirname "$0") && pwd -P)
 
-output=""
-
 function run {
-  local res=$($python "$1" "$2" "$3" "$4")
-  if [ "$res" = "" ]; then
-    return
-  fi
-
-  if [ "$output" != "" ]; then
-    output="$output | $res"
-  else
-    output="$res"
-  fi
+  $python "$1" "$2" "$3" "$4"
 }
 
 function run_all {
   source $CURRENT_DIR/tasks
 }
 
-run_all
+output=$(run_all | grep -ve '^$' | paste -sd '|' - | sed -e 's/\|/ | /g')
 
 if [ "$output" != "" ]; then
   echo $output
